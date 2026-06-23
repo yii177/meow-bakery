@@ -234,7 +234,11 @@
             box.scrollTop = box.scrollHeight;
         });
 
-        socket.on('intelFound', (data) => alert(data.msg));
+                // 🔒【前端防禦】：只有主動觸發、真正收到密報的玩家才會跳出視窗，其他連線朋友完全看不到！
+        socket.on('intelFound', (data) => {
+            alert(data.msg);
+        });
+
         socket.on('moveResult', (data) => alert(data.msg));
         socket.on('bakeResult', (data) => alert(data.msg));
         socket.on('gameOver', (data) => { 
