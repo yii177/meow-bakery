@@ -10,7 +10,7 @@ app.use(express.static('public'));
 
 let rooms = {};
 const FOODS = ['🍓 草莓', '🍫 巧克力', '🥛 牛奶', '🐟 魔法魚干'];
-const SPAWN_POINTS =; 
+const SPAWN_POINTS = [0, 4, 20, 24];
 
 function isAdjacent(pos1, pos2) {
     let r1 = Math.floor(pos1 / 5), c1 = pos1 % 5;
