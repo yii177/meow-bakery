@@ -24,30 +24,31 @@
             currentPlayer.inventory.push(loot);
             logMsg += ` 並採集到 ${loot}！`;
             io.to(roomId).emit('gameLog', logMsg);
-        } else if (tileType === '🔍 辦公室') {
-            // 💼 辦公室功能：精準的【個人私密密報】
+                } else if (tileType === '🔍 辦公室') {
+            // 🔍【辦公室：精準個人私密密報】
             let targets = room.players.filter(p => p.name !== currentPlayer.name);
             let randomTarget = targets[Math.floor(Math.random() * targets.length)];
             if (randomTarget && randomTarget.cards.length > 0) {
                 let randomCard = randomTarget.cards[Math.floor(Math.random() * randomTarget.cards.length)];
-                logMsg += ` 進入辦公室暗中翻閱了個人線索。`;
-                io.to(roomId).emit('gameLog', logMsg);
-                // 只發送給踩到格子的該位玩家，不公開給全場
-                io.to(currentPlayer.id).emit('intelFound', { msg: `🔍 【辦公室密報】：你悄悄翻閱了 ${randomTarget.name} 的筆記，發現他手上有【配方 ${randomCard} 號】！這張牌絕對不是謎底，你可以偷偷把它劃掉，不要告訴別人喔！` });
+                // 🔒【修正】：群組日誌只會顯示 XX 進入辦公室，絕對不公開排除了幾號！
+                io.to(roomId).emit('gameLog', `🐾 【${currentPlayer.name}】悄悄走進了 🔍 辦公室暗中翻閱日記...`);
+                // 🔒【只發給踩格子的這個人】：達成心機博弈
+                if (!currentPlayer.isAI) {
+                    io.to(currentPlayer.id).emit('intelFound', { msg: `🔍 【辦公室私密密報】：你悄悄翻閱了 ${randomTarget.name} 的筆記，發現他手上有【配方 ${randomCard} 號】！這張牌絕對不是謎底，趕快偷偷在筆記本劃掉，不要告訴別人喔！` });
+                }
             } else {
                 io.to(roomId).emit('gameLog', logMsg);
             }
         } else if (tileType === '🏛️ 圖書館') {
-            // 🏛️ 圖書館功能：震撼的【全場公開公報】，徹底修復日誌不顯示 Bug
+            // 🏛️【圖書館：震撼全場公開大公報】
             let pool = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10'].filter(x => x !== room.secretAnswer);
             let broadcastCard = pool[Math.floor(Math.random() * pool.length)];
-            logMsg += ` 觸發了圖書館的【全場公開公報】！`;
-            io.to(roomId).emit('gameLog', logMsg);
-            // 用廣播大喊，將被剔除的號碼直接清清楚楚印在日誌欄，全場同步得知！
-            io.to(roomId).emit('gameLog', `📢 【圖書館大公報】：經過全場搜查，確認【配方 ${broadcastCard} 號】絕非本次的完美配方！請所有玩家立刻在筆記本上將其排除！`);
+            io.to(roomId).emit('gameLog', `🐾 【${currentPlayer.name}】翻開了圖書館的絕密古籍！`);
+            io.to(roomId).emit('gameLog', `📢 【圖書館大公報】：全場注意！確認【配方 ${broadcastCard} 號】絕非本次的大謎底！請所有人立刻在筆記本上將其排除！`);
         } else {
             io.to(roomId).emit('gameLog', logMsg);
         }
+
 
         // 切換回合
         room.turnIndex = (room.turnIndex + 1) % room.players.length;
