@@ -3,21 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>貓貓麵包店的完美配方 - 連線動態版</title>
+    <title>貓貓麵包店 - 朋友連線版</title>
     <style>
-        body { font-family: 'Arial', sans-serif; background-color: #f7f5f0; margin: 0; padding: 20px; text-align: center; }
-        .setup-panel { background: white; padding: 15px; border-radius: 10px; margin-bottom: 20px; display: inline-block; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        .game-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; margin-top: 20px; }
-        .board { display: grid; grid-template-columns: repeat(5, 90px); grid-template-rows: repeat(5, 90px); gap: 6px; background: #e0d8c8; padding: 12px; border-radius: 10px; box-shadow: 0 8px 16px rgba(0,0,0,0.1); }
-        .tile { background-color: #fff; border: 2px solid #bda88a; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 12px; cursor: pointer; transition: all 0.2s; position: relative; font-weight: bold; }
-        .tile:hover { transform: scale(1.05); background-color: #fffdf9; }
-        .center-tile { background-color: #ffd166; border-color: #f4a261; }
-        .notebook { background: #fff; border-left: 5px solid #ff85a2; padding: 15px; border-radius: 5px; box-shadow: 2px 2px 10px rgba(0,0,0,0.05); text-align: left; min-width: 250px; }
-        .notebook-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 10px; }
-        .note-item { cursor: pointer; padding: 5px; border-bottom: 1px dashed #ccc; }
-        .status-bar { width: 100%; max-width: 750px; background: #264653; color: white; padding: 10px; border-radius: 8px; margin: 10px auto; font-weight: bold; display: none; }
-        .player-tag { position: absolute; bottom: 4px; background: #e76f51; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; font-weight: bold; }
-        .hand-panel { background: #e9c46a; padding: 10px; border-radius: 5px; margin-top: 15px; font-weight: bold; text-align: left; }
+        body { font-family: sans-serif; background: #fcfaf2; margin: 0; padding: 20px; text-align: center; color: #4a3e3d; }
+        h1 { color: #d96b43; margin: 5px; }
+        input, button { padding: 8px; font-size: 14px; border-radius: 8px; border: 2px solid #bda88a; font-weight: bold; margin: 2px; }
+        button { background: #f4a261; color: white; border: none; cursor: pointer; box-shadow: 0 4px 0 #e76f51; }
+        button:active { transform: translateY(4px); box-shadow: none; }
+        .game-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; margin-top: 15px; }
+        .board { display: grid; grid-template-columns: repeat(5, 90px); grid-template-rows: repeat(5, 90px); gap: 6px; background: #eedec4; padding: 10px; border-radius: 12px; border: 4px solid #bda88a; }
+        .tile { background: #fff; border: 2px solid #dcd1be; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 12px; cursor: pointer; position: relative; font-weight: bold; }
+        .center-tile { background: #ffe57f; border-color: #ffb300; }
+        .side-panel { display: flex; flex-direction: column; gap: 12px; min-width: 260px; text-align: left; }
+        .box { background: #fff; padding: 12px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 2px solid #e9c46a; }
+        .notebook-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 5px; }
+        .note-item { cursor: pointer; padding: 4px; border-bottom: 1px dashed #eedec4; font-size: 13px; }
+        .status-bar { max-width: 760px; background: #264653; color: white; padding: 10px; border-radius: 8px; margin: 10px auto; font-weight: bold; }
+        .log-box { max-width: 760px; background: #ece7dd; height: 80px; margin: 10px auto; overflow-y: auto; padding: 8px; border-radius: 8px; text-align: left; font-size: 12px; border: 1px solid #d1c7b7; }
+        .p-avatar { padding: 2px 5px; border-radius: 5px; font-size: 10px; color: white; margin-top: 2px; font-weight: bold; }
     </style>
     <script src="/socket.io/socket.io.js"></script>
 </head>
@@ -25,70 +28,63 @@
 
     <h1>🐾 貓貓麵包店的完美配方 🐾</h1>
     
-    <div class="setup-panel" id="lobby">
-        <input type="text" id="playerName" placeholder="貓咪暱稱" value="橘貓新手" style="padding: 5px;">
-        <input type="text" id="roomId" placeholder="房間號碼" value="123" style="padding: 5px; width: 60px;">
-        <button onclick="joinRoom()" style="padding: 5px 10px; background: #2a9d8f; color: white; border: none; cursor: pointer;">加入/創建房間</button>
-        <button onclick="startGame()" style="padding: 5px 10px; background: #e76f51; color: white; border: none; cursor: pointer;">補滿AI並開賽！</button>
+    <div id="lobby" class="box" style="display:inline-block; border-color:#f4d35e;">
+        <input type="text" id="playerName" placeholder="我的暱稱" style="width:90px;">
+        <input type="text" id="roomId" placeholder="房號" value="888" style="width:40px; text-align:center;">
+        <button onclick="joinRoom()">1. 進入廚房連線</button>
+        <button id="startBtn" onclick="startGame()" style="background:#2a9d8f; box-shadow:0 4px 0 #1f7469; display:none;">2. 全員到齊！開賽發牌</button>
     </div>
 
-    <div class="status-bar" id="statusBar">🎮 遊戲進行中 | 當前輪到：等待開賽...</div>
+    <div class="status-bar" id="statusBar">🧁 歡迎！請先輸入暱稱並進入連線。</div>
+    <div class="log-box" id="logBox">🪵 貓咪腳印日誌將顯示於此...</div>
 
     <div class="game-container" id="gameScreen" style="display:none;">
         <div class="board" id="kitchenBoard"></div>
         
-        <div>
-            <div class="notebook">
-                <h3>📒 肉墊偵探筆記 (點擊排除)</h3>
+        <div class="side-panel">
+            <div class="box" style="border-left:6px solid #ff85a2;">
+                <h3 style="margin:0;">📒 偵探筆記 (點擊劃掉)</h3>
                 <div class="notebook-grid" id="notebookGrid"></div>
             </div>
-            <div class="hand-panel" id="handPanel">🎴 我的神祕提示卡：等待發牌...</div>
+            
+            <div class="box">
+                <div id="handPanel" style="color:#d96b43; font-weight:bold; margin-bottom:8px;">🎴 我的提示卡：等待發牌...</div>
+                <div id="inventoryPanel" style="font-weight:bold; color:#264653;">🎒 食材背包：空</div>
+            </div>
+
+            <div class="box" style="background:#fffde7; text-align:center;">
+                <h4 style="margin:0 0 5px 0;">🔥 站在烤爐上輸入推測配方</h4>
+                <input type="number" id="guessInput" placeholder="數字(1-10)" style="width:80px; text-align:center;">
+                <button onclick="submitBake()" style="background:#e76f51; box-shadow:0 4px 0 #b54f35;">開爐判定！</button>
+            </div>
+            
+            <!-- 核心功能：免洗畫面直接重開鈕 -->
+            <button id="restartBtn" onclick="startGame()" style="background:#2a9d8f; box-shadow:0 4px 0 #1f7469; display:none; width:100%;">🔄 再玩一局 (直接重洗發牌)</button>
         </div>
     </div>
 
     <script>
         const socket = io();
-        let myId = null;
-        let gameState = { players: [], board: Array(25).fill('🧱 流理台') };
+        let myName = "", currentRoomId = "", isMyTurn = false, myCurrentPos = 0;
+
+        // 生成隨機預設暱稱
+        document.getElementById('playerName').value = '玩家貓' + Math.floor(Math.random()*900 + 100);
 
         function joinRoom() {
-            const roomId = document.getElementById('roomId').value;
-            const playerName = document.getElementById('playerName').value;
-            socket.emit('joinRoom', { roomId, playerName });
-            myId = socket.id;
+            currentRoomId = document.getElementById('roomId').value;
+            myName = document.getElementById('playerName').value;
+            if(!myName) return alert("請輸入暱稱！");
+            
+            socket.emit('joinRoom', { roomId: currentRoomId, playerName: myName });
             document.getElementById('gameScreen').style.display = 'flex';
-            document.getElementById('statusBar').style.display = 'block';
-            initBoardUI();
+            document.getElementById('startBtn').style.display = 'inline-block';
+            document.getElementById('statusBar').innerText = `已進入房間 #${currentRoomId}！等待大家到齊後點擊開賽...`;
             initNotebookUI();
         }
 
-        function startGame() {
-            const roomId = document.getElementById('roomId').value;
-            socket.emit('startGame', roomId);
-        }
-
-        // 靜態生成 5x5 地圖基礎外觀
-        function initBoardUI() {
-            const board = document.getElementById('kitchenBoard');
-            board.innerHTML = '';
-            for (let i = 0; i < 25; i++) {
-                const tile = document.createElement('div');
-                tile.classList.add('tile');
-                tile.id = `tile-${i}`;
-                if (i === 12) {
-                    tile.classList.add('center-tile');
-                    tile.innerHTML = '🍳<br>中央烤爐';
-                } else if (i % 4 === 0) {
-                    tile.innerHTML = '🍓<br>食材櫃';
-                } else if (i === 6 || i === 18) {
-                    tile.innerHTML = '🔍<br>辦公室';
-                } else {
-                    tile.innerHTML = '🧱<br>流理台';
-                }
-                // 點擊流理台格子時觸發移動
-                tile.onclick = () => handleTileClick(i);
-                board.appendChild(tile);
-            }
+        function startGame() { 
+            socket.emit('startGame', currentRoomId); 
+            document.getElementById('restartBtn').style.display = 'none';
         }
 
         function initNotebookUI() {
@@ -96,47 +92,78 @@
             notebook.innerHTML = '';
             for (let i = 1; i <= 10; i++) {
                 const item = document.createElement('div');
-                item.classList.add('note-item');
+                item.className = 'note-item';
                 item.innerText = `配方 ${i.toString().padStart(2, '0')} ⭕`;
                 item.onclick = () => {
                     item.innerText = item.innerText.includes('⭕') ? `配方 ${i.toString().padStart(2, '0')} ❌` : `配方 ${i.toString().padStart(2, '0')} ⭕`;
+                    item.style.color = item.innerText.includes('❌') ? '#ccc' : '#4a3e3d';
                 };
                 notebook.appendChild(item);
             }
         }
 
-        // 【核心修正】動態更新玩家位置與手牌資訊
-        socket.on('gameStarted', (data) => {
-            document.getElementById('statusBar').innerText = `🎮 遊戲正式開始！當前回合：${data.players[0].name}`;
-            
-            // 尋找自己在伺服器端分配到的手牌
-            const me = data.players.find(p => p.id === socket.id || p.name === document.getElementById('playerName').value);
-            if (me && me.cards) {
-                document.getElementById('handPanel').innerText = `🎴 我的神祕提示卡（絕對不是謎底）：【配方 ${me.cards.join(' 號】、【配方 ')} 號】`;
-            }
+        socket.on('gameStateUpdate', (room) => {
+            const board = document.getElementById('kitchenBoard');
+            board.innerHTML = '';
 
-            // 清除舊的貓咪位置，並將 4 隻貓咪放上地圖
-            for (let i = 0; i < 25; i++) {
-                const tags = document.getElementById(`tile-${i}`).querySelectorAll('.player-tag');
-                tags.forEach(t => t.remove());
-            }
+            room.boardTiles.forEach((tileType, i) => {
+                const tile = document.createElement('div');
+                tile.className = i === 12 ? 'tile center-tile' : 'tile';
+                tile.innerHTML = tileType === '🍳 中央烤爐' ? '🍳<br>烤爐' : tileType === '🍓 食材櫃' ? '🍓<br>食材櫃' : tileType === '🔍 辦公室' ? '🔍<br>辦公室' : '🧱<br>流理台';
 
-            // 初始分配位置：4 名玩家依序放入地圖的四個角落與邊緣
-            const spawnPoints = [0, 4, 20, 24];
-            data.players.forEach((player, index) => {
-                const tileIndex = spawnPoints[index];
-                const tile = document.getElementById(`tile-${tileIndex}`);
-                const tag = document.createElement('div');
-                tag.classList.add('player-tag');
-                tag.innerText = player.isAI ? '🐱 AI' : '🐾 我';
-                if(player.isAI) tag.style.background = '#2a9d8f';
-                tile.appendChild(tag);
+                room.players.forEach(p => {
+                    if (p.pos === i) {
+                        const tag = document.createElement('span');
+                        tag.className = 'p-avatar';
+                        let isMe = (p.id === socket.id || p.name === myName);
+                        if (isMe) { myCurrentPos = i; } // 紀錄自己位置
+                        tag.style.background = isMe ? '#e76f51' : '#2a9d8f';
+                        tag.innerText = isMe ? '🐾 我' : p.name.replace(' (AI)', '');
+                        tile.appendChild(tag);
+                    }
+                });
+                
+                tile.onclick = () => {
+                    if (!isMyTurn) return alert("現在不是你的回合喔！");
+                    socket.emit('movePlayer', { roomId: currentRoomId, targetPos: i });
+                };
+                board.appendChild(tile);
             });
+
+            let currentP = room.players[room.turnIndex];
+            isMyTurn = (currentP.id === socket.id || currentP.name === myName);
+            document.getElementById('statusBar').innerText = isMyTurn ? "🌟 輪到你的回合！請點擊前後左右或斜角相鄰的 1 格移動！" : `💤 等待中... 當前輪到：【${currentP.name}】`;
+            document.getElementById('statusBar').style.background = isMyTurn ? "#e76f51" : "#264653";
+
+            let me = room.players.find(p => p.name === myName || p.id === socket.id);
+            if (me) {
+                document.getElementById('handPanel').innerText = `🎴 我的手牌提示：【配方 ${me.cards.join(' 號】、【配方 ')} 號】`;
+                document.getElementById('inventoryPanel').innerText = `🎒 食材背包：${me.inventory.length > 0 ? me.inventory.join(', ') : '空'}`;
+            }
         });
 
-        function handleTileClick(index) {
-            alert(`你點擊了第 ${index + 1} 格廚房板塊！現在輪到你移動，已向伺服器發送走位請求。`);
+        function submitBake() {
+            if (myCurrentPos !== 12) return alert("❌ 你必須先走到地圖正中央的「🍳 烤爐」格子才能進行出爐判定！");
+            let guess = document.getElementById('guessInput').value;
+            if(!guess) return alert("請輸入數字！");
+            socket.emit('tryBake', { roomId: currentRoomId, guessNumber: guess.padStart(2, '0') });
         }
+
+        socket.on('gameLog', (msg) => {
+            const box = document.getElementById('logBox');
+            box.innerHTML += `<div>${msg}</div>`;
+            box.scrollTop = box.scrollHeight;
+        });
+
+        socket.on('intelFound', (data) => alert(data.msg));
+        socket.on('moveResult', (data) => alert(data.msg));
+        socket.on('bakeResult', (data) => alert(data.msg));
+        
+        socket.on('gameOver', (data) => { 
+            alert(data.msg); 
+            document.getElementById('statusBar').innerText = `🏆 遊戲結束！勝者：${data.winner}！可以點擊下方按鈕重開一局。`;
+            document.getElementById('restartBtn').style.display = 'block'; // 顯示重開按鈕
+        });
     </script>
 </body>
 </html>
