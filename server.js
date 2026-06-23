@@ -10,16 +10,14 @@ app.use(express.static('public'));
 
 let rooms = {};
 const FOODS = ['🍓 草莓', '🍫 巧克力', '🥛 牛奶', '🐟 魔法魚干'];
-const SPAWN_POINTS =[0,4,20,24];
+const SPAWN_POINTS =; // 嚴格定義四個角落
 
-// 檢查是否相鄰（國王步，含斜角）
 function isAdjacent(pos1, pos2) {
     let r1 = Math.floor(pos1 / 5), c1 = pos1 % 5;
     let r2 = Math.floor(pos2 / 5), c2 = pos2 % 5;
     return Math.abs(r1 - r2) <= 1 && Math.abs(c1 - c2) <= 1;
 }
 
-// 統計陣列中各元素數量的工具函式
 function countItems(arr) {
     let counts = {};
     arr.forEach(x => counts[x] = (counts[x] || 0) + 1);
@@ -35,6 +33,7 @@ io.on('connection', (socket) => {
                 boardTiles: Array(25).fill('🧱 流理台'),
                 recipe10Combo: [FOODS[Math.floor(Math.random() * 4)], FOODS[Math.floor(Math.random() * 4)]]
             };
+            // 🛡️ 嚴格定義後端字串，拿掉多餘空格，確保與前端 100% 絕對對齊
             for(let i=0; i<25; i++) {
                 if(i===12) rooms[roomId].boardTiles[i] = '🏪 店鋪櫃台';
                 else if(i%4===0) rooms[roomId].boardTiles[i] = '🍓 食材櫃';
@@ -51,7 +50,6 @@ io.on('connection', (socket) => {
         }
         io.to(roomId).emit('gameStateUpdate', rooms[roomId]);
     });
-
     socket.on('startGame', (roomId) => {
         let room = rooms[roomId];
         if (!room) return;
@@ -89,17 +87,17 @@ io.on('connection', (socket) => {
         room.turnIndex = 0;
         
         io.to(roomId).emit('gameStateUpdate', room);
-        io.to(roomId).emit('gameLog', "🏁 貓貓廚房開賽！【採集 ➔ 加工 ➔ 上架】大作戰正式爆發！");
+        io.to(roomId).emit('gameLog', "🏁 貓貓廚房大門開啟！【採集 ➔ 加工 ➔ 上架】大作戰正式爆發！");
         
         checkAITurn(room, roomId);
     });
+
     socket.on('pushGrid', ({ roomId, type, index }) => {
         let room = rooms[roomId];
         if (!room || !room.gameStarted) return;
         let currentPlayer = room.players[room.turnIndex];
         if (currentPlayer.id !== socket.id) return;
 
-        // 🛡️【中央定海神針防禦】：正中間是 index 2，如果想推中央直接擋掉，保護店鋪櫃台！
         if (index === 2) {
             socket.emit('moveResult', { success: false, msg: "❌ 這裡是店鋪正中央大核心，不能推動這一排喔！" });
             return;
@@ -152,9 +150,7 @@ io.on('connection', (socket) => {
             let randomTarget = targets[Math.floor(Math.random() * targets.length)];
             if (randomTarget && randomTarget.cards.length > 0) {
                 let randomCard = randomTarget.cards[Math.floor(Math.random() * randomTarget.cards.length)];
-                // 🔒【辦公室修正】：全場日誌只留紀錄，絕不把配方數字印出來！
                 io.to(roomId).emit('gameLog', `🐾 【${currentPlayer.name}】悄悄走進了 🔍 辦公室暗中翻閱日記...`);
-                // 🔒 單獨密報給踩到格子的人，心機完美保密
                 if (!currentPlayer.isAI) {
                     io.to(currentPlayer.id).emit('intelFound', { msg: `🔍 【辦公室私密密報】：你悄悄翻閱了 ${randomTarget.name} 的筆記，發現他手上有【配方 ${randomCard} 號】！這張牌絕對不是謎底，趕快偷偷在筆記本劃掉！` });
                 }
@@ -162,13 +158,12 @@ io.on('connection', (socket) => {
                 io.to(roomId).emit('gameLog', `🐾 【${currentPlayer.name}】走到了辦公室，但沒發現新日記。`);
             }
         } else if (tileType === '🏛️ 圖書館') {
-            // 📢【圖書館大公開】：直接明明白白廣播給全場，印在所有人的日誌上！
             let pool = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10'].filter(x => x !== room.secretAnswer);
             let broadcastCard = pool[Math.floor(Math.random() * pool.length)];
             io.to(roomId).emit('gameLog', `🐾 【${currentPlayer.name}】翻開了圖書館的絕密古籍！`);
             io.to(roomId).emit('gameLog', `📢 【圖書館大公報】：全場注意！確認【配方 ${broadcastCard} 號】絕非大謎底！請所有人立刻將其排除！`);
         } else {
-            io.to(roomId).emit('gameLog', `🐾 【${currentPlayer.name}】移動到了第 ${targetPos+1} 格 (${tileType.replace('<br>','')})`);
+            io.to(roomId).emit('gameLog', `🐾 【${currentPlayer.name}】移動到了第 ${targetPos+1} 格 (${tileType})`);
         }
 
         room.turnIndex = (room.turnIndex + 1) % room.players.length;
@@ -275,7 +270,7 @@ function checkAITurn(room, roomId) {
     if (nextPlayer && nextPlayer.isAI) {
         setTimeout(() => {
             if(Math.random() > 0.85) {
-                let allowedLines =[0,1,3,4];
+                let allowedLines =;
                 let t = ['row', 'col'][Math.floor(Math.random()*2)], idx = allowedLines[Math.floor(Math.random()*4)];
                 io.to(roomId).emit('gameLog', `🤖 【${nextPlayer.name}】在思考後，甩尾發動了大風吹！`);
                 
