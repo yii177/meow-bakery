@@ -275,7 +275,7 @@ function checkAITurn(room, roomId) {
     if (nextPlayer && nextPlayer.isAI) {
         setTimeout(() => {
             if(Math.random() > 0.85) {
-                let allowedLines =;
+                let allowedLines =[0,1,3,4];
                 let t = ['row', 'col'][Math.floor(Math.random()*2)], idx = allowedLines[Math.floor(Math.random()*4)];
                 io.to(roomId).emit('gameLog', `🤖 【${nextPlayer.name}】在思考後，甩尾發動了大風吹！`);
                 
