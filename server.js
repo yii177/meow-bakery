@@ -10,7 +10,7 @@ app.use(express.static('public'));
 
 let rooms = {};
 const FOODS = ['🍓 草莓', '🍫 巧克力', '🥛 牛奶', '🐟 魔法魚干'];
-const SPAWN_POINTS =[0,4,20,24];
+const SPAWN_POINTS = new Array(0, 4, 20, 24); 
 
 function isAdjacent(pos1, pos2) {
     let r1 = Math.floor(pos1 / 5), c1 = pos1 % 5;
@@ -30,16 +30,15 @@ io.on('connection', (socket) => {
         if (!rooms[roomId]) {
             rooms[roomId] = {
                 id: roomId, players: [], gameStarted: false, secretAnswer: null, turnIndex: 0,
-                boardTiles: Array(25).fill('🧱 流理台'),
+                // ⭐ 指令修復 1：直接把流理台全面升級改成「🍳 加工區」
+                boardTiles: Array(25).fill('🍳 加工區'),
                 recipe10Combo: [FOODS[Math.floor(Math.random() * 4)], FOODS[Math.floor(Math.random() * 4)]]
             };
-            // 🛡️ 嚴格定義後端字串，拿掉多餘空格，確保與前端 100% 絕對對齊
             for(let i=0; i<25; i++) {
                 if(i===12) rooms[roomId].boardTiles[i] = '🏪 店鋪櫃台';
                 else if(i%4===0) rooms[roomId].boardTiles[i] = '🍓 食材櫃';
                 else if(i===6) rooms[roomId].boardTiles[i] = '🔍 辦公室';
-                else if(i===18) rooms[roomId].boardTiles[i] = '🏛️ 圖書館';
-                else if(i===8 || i===16) rooms[roomId].boardTiles[i] = '🍳 加工區';
+                else if(i===18 || i===20) rooms[roomId].boardTiles[i] = '🏛️ 圖書館';
             }
         }
         let existing = rooms[roomId].players.find(p => p.id === socket.id);
@@ -50,6 +49,7 @@ io.on('connection', (socket) => {
         }
         io.to(roomId).emit('gameStateUpdate', rooms[roomId]);
     });
+
     socket.on('startGame', (roomId) => {
         let room = rooms[roomId];
         if (!room) return;
@@ -87,8 +87,7 @@ io.on('connection', (socket) => {
         room.turnIndex = 0;
         
         io.to(roomId).emit('gameStateUpdate', room);
-        io.to(roomId).emit('gameLog', "🏁 貓貓廚房大門開啟！【採集 ➔ 加工 ➔ 上架】大作戰正式爆發！");
-        
+        io.to(roomId).emit('gameLog', "🏁 貓貓廚房大門開啟！【採集 ➔ 加工 ➔ 上架】戰役正式爆發！");
         checkAITurn(room, roomId);
     });
 
@@ -115,13 +114,11 @@ io.on('connection', (socket) => {
             tiles[index] = temp;
         }
 
-        io.to(roomId).emit('gameLog', `💨 【${currentPlayer.name}】甩尾發動了大風吹，強行推動了地圖！`);
-        
+        io.to(roomId).emit('gameLog', `💨 【${currentPlayer.name}】發動了大風吹，推動了地形！`);
         room.turnIndex = (room.turnIndex + 1) % room.players.length;
         io.to(roomId).emit('gameStateUpdate', room);
         checkAITurn(room, roomId);
     });
-
     socket.on('movePlayer', ({ roomId, targetPos }) => {
         let room = rooms[roomId];
         if (!room) return;
@@ -270,7 +267,8 @@ function checkAITurn(room, roomId) {
     if (nextPlayer && nextPlayer.isAI) {
         setTimeout(() => {
             if(Math.random() > 0.85) {
-                let allowedLines = [0,1,3,4];
+                // 使用 new Array 語法避免吃字
+                let allowedLines = new Array(0, 1, 3, 4);
                 let t = ['row', 'col'][Math.floor(Math.random()*2)], idx = allowedLines[Math.floor(Math.random()*4)];
                 io.to(roomId).emit('gameLog', `🤖 【${nextPlayer.name}】在思考後，甩尾發動了大風吹！`);
                 
@@ -294,11 +292,20 @@ function checkAITurn(room, roomId) {
             let aiTarget = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
             nextPlayer.pos = aiTarget;
             let tileType = room.boardTiles[aiTarget];
-            let aiLog = `🤖 【${nextPlayer.name}】碎步移動到第 ${aiTarget+1} 格 (${tileType.replace('<br>','')})`;
+            
+            // ⭐【修正關鍵】：當 AI 電腦玩家移動時，在此主動判斷它走到的格子種類
             if (tileType === '🍓 食材櫃') {
                 nextPlayer.inventory.push(FOODS[Math.floor(Math.random() * FOODS.length)]);
+                io.to(roomId).emit('gameLog', `🤖 【${nextPlayer.name}】碎步移動到食材櫃，並採集到食材！`);
+            } else if (tileType === '🏛️ 圖書館') {
+                // ⭐【AI 圖書館大公報強制修復】：直接在此強行撈取假號碼廣播，不發送普通移動日誌
+                let pool = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10'].filter(x => x !== room.secretAnswer);
+                let broadcastCard = pool[Math.floor(Math.random() * pool.length)];
+                io.to(roomId).emit('gameLog', `🤖 【${nextPlayer.name}】走到了圖書館，翻開了絕密古籍！`);
+                io.to(roomId).emit('gameLog', `📢 【圖書館大公報】：全場注意！確認【配方 ${broadcastCard} 號】絕非大謎底！請所有人立刻將其排除！`);
+            } else {
+                io.to(roomId).emit('gameLog', `🤖 【${nextPlayer.name}】碎步移動到第 ${aiTarget+1} 格 (${tileType})`);
             }
-            io.to(roomId).emit('gameLog', aiLog);
             
             room.turnIndex = (room.turnIndex + 1) % room.players.length;
             io.to(roomId).emit('gameStateUpdate', room);
