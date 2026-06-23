@@ -10,7 +10,7 @@ app.use(express.static('public'));
 
 let rooms = {};
 const FOODS = ['🍓 草莓', '🍫 巧克力', '🥛 牛奶', '🐟 魔法魚干'];
-const SPAWN_POINTS =; // 嚴格定義四個角落
+const SPAWN_POINTS =[0,4,20,24];
 
 function isAdjacent(pos1, pos2) {
     let r1 = Math.floor(pos1 / 5), c1 = pos1 % 5;
@@ -270,7 +270,7 @@ function checkAITurn(room, roomId) {
     if (nextPlayer && nextPlayer.isAI) {
         setTimeout(() => {
             if(Math.random() > 0.85) {
-                let allowedLines =;
+                let allowedLines = [0,1,3,4];
                 let t = ['row', 'col'][Math.floor(Math.random()*2)], idx = allowedLines[Math.floor(Math.random()*4)];
                 io.to(roomId).emit('gameLog', `🤖 【${nextPlayer.name}】在思考後，甩尾發動了大風吹！`);
                 
