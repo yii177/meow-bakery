@@ -1,226 +1,83 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>貓貓麵包店的完美配方 - 豪華完全體</title>
+    <meta charset="UTF-8"><viewport content="width=device-width, initial-scale=1.0">
+    <title>貓貓麵包店</title>
     <style>
-        body { font-family: sans-serif; background: #fcfaf2; margin: 0; padding: 15px; text-align: center; color: #4a3e3d; }
-        h1 { color: #d96b43; margin: 5px; font-size: 24px; text-shadow: 1px 1px 0 #fff; }
-        input, button { padding: 6px 12px; font-size: 13px; border-radius: 8px; border: 2px solid #bda88a; font-weight: bold; margin: 2px; }
+        body { font-family: sans-serif; background: #fcfaf2; margin: 0; padding: 10px; text-align: center; color: #4a3e3d; }
+        input, button { padding: 6px; font-size: 13px; border-radius: 6px; border: 2px solid #bda88a; font-weight: bold; }
         button { background: #f4a261; color: white; border: none; cursor: pointer; box-shadow: 0 4px 0 #e76f51; }
         button:active { transform: translateY(4px); box-shadow: none; }
-        .shift-controls { display: flex; justify-content: center; gap: 4px; margin-bottom: 5px; }
-        .shift-btn { background-color: #2a9d8f; box-shadow: 0 4px 0 #1f7469; font-size: 11px; padding: 4px 6px; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
-        /* 🏆 奢華黃金大三欄並排，絕對不會掉下去 */
-        .game-container { display: flex; justify-content: center; align-items: flex-start; gap: 20px; margin: 15px auto; width: 100%; max-width: 1250px; }
-        .board { display: grid; grid-template-columns: repeat(5, 95px); grid-template-rows: repeat(5, 95px); gap: 6px; background: #eedec4; padding: 10px; border-radius: 12px; border: 4px solid #bda88a; shrink: 0; }
-        .tile { background: #fff; border: 2px solid #dcd1be; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 11px; cursor: pointer; position: relative; font-weight: bold; box-shadow: inset 0 -4px 0 #f0e6d2; }
-        .center-tile { background: #ffe57f; border-color: #ffb300; box-shadow: inset 0 -4px 0 #ffe082; }
-        .side-panel { display: flex; flex-direction: column; gap: 10px; width: 290px; text-align: left; shrink: 0; }
-        .box { background: #fff; padding: 12px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 2px solid #e9c46a; }
-        .notebook-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 5px; }
-        .note-item { cursor: pointer; padding: 4px; border-bottom: 1px dashed #eedec4; font-size: 12px; }
-        .menu-panel { width: 260px; background: white; border: 3px solid #d96b43; border-radius: 12px; padding: 12px; text-align: left; font-size: 12px; line-height: 1.5; shrink: 0; }
-        .menu-title { text-align: center; font-weight: bold; font-size: 14px; color: #d96b43; border-bottom: 2px dashed #d96b43; margin-bottom: 8px; padding-bottom: 4px; }
-        .status-bar { max-width: 900px; background: #264653; color: white; padding: 10px; border-radius: 8px; margin: 5px auto; font-weight: bold; }
-        .log-box { max-width: 900px; background: #ece7dd; height: 85px; margin: 5px auto; overflow-y: auto; padding: 8px; border-radius: 8px; text-align: left; font-size: 11px; border: 1px solid #d1c7b7; font-weight: bold; }
-        .p-avatar { display: inline-block; padding: 2px 5px; border-radius: 5px; font-size: 10px; color: white; font-weight: bold; margin-top: 3px; box-shadow: 0 2px 2px rgba(0,0,0,0.1); text-align: center; }
+        .game-container { display: flex; justify-content: center; align-items: flex-start; gap: 15px; margin: 10px auto; }
+        .board { display: grid; grid-template-columns: repeat(5, 90px); grid-template-rows: repeat(5, 90px); gap: 5px; background: #eedec4; padding: 10px; border-radius: 12px; border: 4px solid #bda88a; shrink: 0; }
+        .tile { background: #fff; border: 2px solid #dcd1be; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 11px; cursor: pointer; position: relative; font-weight: bold; box-shadow: inset 0 -4px 0 #f0e6d2; }
+        .center-tile { background: #ffe57f; border-color: #ffb300; }
+        .side-panel, .menu-panel { background: #fff; padding: 10px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); text-align: left; shrink: 0; font-size: 12px; border: 2px solid #e9c46a; }
+        .side-panel { width: 260px; display: flex; flex-direction: column; gap: 8px; }
+        .menu-panel { width: 240px; border-color: #d96b43; line-height: 1.5; }
+        .notebook-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+        .note-item { cursor: pointer; padding: 3px; border-bottom: 1px dashed #eedec4; }
+        .status-bar { max-width: 850px; background: #264653; color: white; padding: 8px; border-radius: 6px; margin: 5px auto; font-weight: bold; }
+        .log-box { max-width: 850px; background: #ece7dd; height: 65px; margin: 5px auto; overflow-y: auto; padding: 6px; border-radius: 6px; text-align: left; font-size: 11px; border: 1px solid #d1c7b7; font-weight: bold; }
+        .p-avatar { padding: 2px 4px; border-radius: 4px; font-size: 9px; color: white; margin-top: 1px; display: block; }
     </style>
     <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
-
     <h1>🐾 貓貓麵包店的完美配方 🐾</h1>
-    <div id="lobby" class="box" style="display:inline-block; border-color:#f4d35e; padding: 8px;">
-        <input type="text" id="playerName" placeholder="我的暱稱" style="width:90px;">
-        <input type="text" id="roomId" value="666" style="width:35px; text-align:center;">
-        <button onclick="joinRoom()">1. 進入連線</button>
-        <button id="startBtn" onclick="startGame()" style="background:#2a9d8f; box-shadow:0 4px 0 #1f7469; display:none;">2. 到齊開賽</button>
-    </div>
-
-    <div class="status-bar" id="statusBar">🧁 請先進入廚房。</div>
-    
-    <div class="shift-controls" id="shiftControls" style="display:none;">
-        <button onclick="pushGrid('row', 0)">⬅️ 推 A 列</button>
-        <button onclick="pushGrid('row', 1)">➡️ 推 B 列</button>
-        <button onclick="pushGrid('row', 3)">⬅️ 推 D 列</button>
-        <button onclick="pushGrid('row', 4)">➡️ 推 E 列</button>
-        <span style="font-weight:bold; font-size:12px; align-self:center;">|</span>
-        <button onclick="pushGrid('col', 0)">⬆️ 推 1 行</button>
-        <button onclick="pushGrid('col', 1)">⬇️ 推 2 行</button>
-        <button onclick="pushGrid('col', 3)">⬆️ 推 4 行</button>
-        <button onclick="pushGrid('col', 4)">⬇️ 推 5 行</button>
-    </div>
-
-    <div class="log-box" id="logBox">🪵 貓咪大風吹與圖書館公報日誌...</div>
-
+    <div id="lobby"><input type="text" id="playerName" style="width:80px;"><input type="text" id="roomId" value="555" style="width:30px; text-align:center;"><button onclick="joinRoom()">1. 進入連線</button><button id="startBtn" onclick="startGame()" style="background:#2a9d8f; box-shadow:0 4px 0 #1f7469; display:none;">2. 開賽發牌</button></div>
+    <div class="status-bar" id="statusBar">🧁 請先登入。</div>
+    <div id="shiftControls" style="display:none; justify-content:center; gap:3px; margin:3px;"><button onclick="socket.emit('pushGrid',{roomId:currentRoomId,type:'row',index:0})">⬅️推A</button><button onclick="socket.emit('pushGrid',{roomId:currentRoomId,type:'row',index:1})">➡️推B</button><button onclick="socket.emit('pushGrid',{roomId:currentRoomId,type:'row',index:3})">⬅️推D</button><button onclick="socket.emit('pushGrid',{roomId:currentRoomId,type:'row',index:4})">➡️推E</button>|<button onclick="socket.emit('pushGrid',{roomId:currentRoomId,type:'col',index:0})">⬆️推1</button><button onclick="socket.emit('pushGrid',{roomId:currentRoomId,type:'col',index:1})">⬇️推2</button><button onclick="socket.emit('pushGrid',{roomId:currentRoomId,type:'col',index:3})">⬆️推4</button><button onclick="socket.emit('pushGrid',{roomId:currentRoomId,type:'col',index:4})">⬇️推5</button></div>
+    <div class="log-box" id="logBox">🪵 貓咪日誌...</div>
     <div class="game-container" id="gameScreen" style="display:none;">
         <div class="board" id="kitchenBoard"></div>
-        
         <div class="side-panel">
-            <div class="box" style="border-left:6px solid #ff85a2;">
-                <h3 style="margin:0;">📒 偵探筆記 (點擊劃掉)</h3>
-                <div class="notebook-grid" id="notebookGrid"></div>
-            </div>
-            
-            <div class="box">
-                <div id="handPanel" style="color:#d96b43; font-weight:bold; margin-bottom:6px;">🎴 我的手牌：等待發牌...</div>
-                <div id="inventoryPanel" style="font-weight:bold; color:#264653; margin-bottom: 4px;">🎒 食材背包：空</div>
-                <div id="productPanel" style="font-weight:bold; color:#e76f51; font-size: 13px;">🎁 包裝成品：無</div>
-            </div>
-
-            <div class="box" style="background:#edf2f4; text-align:center;">
-                <h4 style="margin:0 0 4px 0;">🍳 廚房加工台 (需站在加工區)</h4>
-                <input type="number" id="combineInput" placeholder="輸入合成配方號(1-10)" style="width:130px; text-align:center;">
-                <button onclick="submitCombine()" style="background:#4a3e3d; box-shadow:0 4px 0 #201a19; width:100%; margin-top:3px;">精煉合成！</button>
-            </div>
-
-            <div class="box" style="background:#fffde7; text-align:center;">
-                <h4 style="margin:0 0 4px 0;">🏪 店鋪櫃台 (需站在櫃台)</h4>
-                <input type="number" id="guessInput" placeholder="商品號(1-10)" style="width:100px; text-align:center;">
-                <button onclick="submitBake()" style="background:#e76f51; box-shadow:0 4px 0 #b54f35;">商品上架！</button>
-            </div>
-            <button id="restartBtn" onclick="startGame()" style="background:#2a9d8f; box-shadow:0 4px 0 #1f7469; display:none; width:100%;">🔄 再玩一局</button>
+            <div style="border-left:5px solid #ff85a2; padding-left:5px;"><h4 style="margin:0;">📒 偵探筆記</h4><div class="notebook-grid" id="notebookGrid"></div></div>
+            <div style="border-top:1px dashed #ccc; padding-top:4px;"><div id="handPanel" style="color:#d96b43; font-weight:bold;">🎴 提示卡：等待發牌...</div><div id="inventoryPanel" style="font-weight:bold; color:#264653;">🎒 背包：空</div><div id="productPanel" style="color:#e76f51; font-weight:bold;">🎁 成品：無</div></div>
+            <div style="background:#edf2f4; padding:6px; border-radius:6px; text-align:center;"><h5 style="margin:0;">🍳 廚房加工台</h5><input type="number" id="combineInput" placeholder="配方號" style="width:60px; text-align:center;"><button onclick="socket.emit('combineRecipe',{roomId:currentRoomId,recipeNum:document.getElementById('combineInput').value.padStart(2,'0')})">加工</button></div>
+            <div style="background:#fffde7; padding:6px; border-radius:6px; text-align:center;"><h5 style="margin:0;">🏪 店鋪櫃台</h5><input type="number" id="guessInput" placeholder="商品號" style="width:60px; text-align:center;"><button onclick="if(myCurrentPos!=12)return alert('必須去中央櫃台！'); socket.emit('tryBake',{roomId:currentRoomId,guessNumber:document.getElementById('guessInput').value.padStart(2,'0')})">上架</button></div>
+            <button id="restartBtn" onclick="startGame()" style="background:#2a9d8f; display:none;">🔄 再玩一局</button>
         </div>
-
-        <div class="menu-panel">
-            <div class="menu-title">📜 完美甜點配方菜單</div>
-            <b>01：草莓重乳酪</b> ➔ 🍓x2 + 🥛x1 (需加工)<br>
-            <b>02：濃情巧克力</b> ➔ 🍫x2 + 🐟x1 (需加工)<br>
-            <b>03：魔法魚干派</b> ➔ 🐟x3 (需加工)<br>
-            <b>04：甜甜雙拼</b> ➔ 2對相同食材 (需加工)<br>
-            <b>05：水果巧克力</b> ➔ 🍓x1 + 🍫x1 + 🥛x1 (需加工)<br>
-            <b>06：蜂蜜牛奶糖</b> ➔ 🍫x2 + 🥛x2 (需加工)<br>
-            <b>07：純素主義</b> ➔ 🚫無魚干 + 任3食材 (免加工)<br>
-            <b>08：大胃王甜點</b> ➔ 種類不限累積5張 (免加工)<br>
-            <b>09：主廚特調</b> ➔ 4種完全不同食材 (免加工)<br>
-            <b id="menu10Text" style="color:#e76f51;">10：主廚驚喜 ➔ 🎲 隨機搭配 🎲</b>
-        </div>
+        <div class="menu-panel"><div style="text-align:center; font-weight:bold; color:#d96b43; border-bottom:1px dashed #d96b43; margin-bottom:4px;">📜 甜點菜單</div>01：草莓重乳酪 ➔ 🍓x2+🥛x1 (需加工)<br>02：濃情巧克力 ➔ 🍫x2+🐟x1 (需加工)<br>03：魔法魚干派 ➔ 🐟x3 (需加工)<br>04：甜甜雙拼 ➔ 2對相同食材 (需加工)<br>05：水果巧克力 ➔ 🍓x1+🍫x1+🥛x1 (需加工)<br>06：蜂蜜牛奶糖 ➔ 🍫x2+🥛x2 (需加工)<br>07：純素主義 ➔ 🚫無魚干+任3食材 (免加工)<br>08：大胃王甜點 ➔ 種類不限5張 (免加工)<br>09：主廚特調 ➔ 4種完全不同食材 (免加工)<br><b id="menu10Text" style="color:#e76f51;">10：主廚驚喜 ➔ 🎲 隨機搭配 🎲</b></div>
     </div>
     <script>
-        const socket = io();
-        let myName = "", currentRoomId = "", isMyTurn = false, myCurrentPos = 0;
-
+        const socket = io(); let myName="", currentRoomId="", isMyTurn=false, myCurrentPos=0;
         document.getElementById('playerName').value = '貓偵探' + Math.floor(Math.random()*900 + 100);
-
         function joinRoom() {
-            currentRoomId = document.getElementById('roomId').value;
-            myName = document.getElementById('playerName').value;
+            currentRoomId = document.getElementById('roomId').value; myName = document.getElementById('playerName').value;
             socket.emit('joinRoom', { roomId: currentRoomId, playerName: myName });
-            document.getElementById('gameScreen').style.display = 'flex';
-            document.getElementById('shiftControls').style.display = 'flex';
-            document.getElementById('startBtn').style.display = 'inline-block';
-            document.getElementById('statusBar').innerText = `已連線房間 #${currentRoomId}！`;
-            initNotebookUI();
-        }
-
-        function startGame() { 
-            document.getElementById('handPanel').innerText = "🎴 發牌中...";
-            document.getElementById('inventoryPanel').innerText = "🎒 食材背包：空";
-            document.getElementById('productPanel').innerText = "🎁 包裝成品：無";
-            socket.emit('startGame', currentRoomId); 
-            document.getElementById('restartBtn').style.display = 'none';
-        }
-
-        function initNotebookUI() {
-            const notebook = document.getElementById('notebookGrid');
-            notebook.innerHTML = '';
+            document.getElementById('gameScreen').style.display = 'flex'; document.getElementById('shiftControls').style.display = 'flex'; document.getElementById('startBtn').style.display = 'inline-block'; document.getElementById('statusBar').innerText = `已連線 #${currentRoomId}`;
+            const notebook = document.getElementById('notebookGrid'); notebook.innerHTML = '';
             for (let i = 1; i <= 10; i++) {
-                const item = document.createElement('div');
-                item.className = 'note-item';
-                item.innerText = `配方 ${i.toString().padStart(2, '0')} ⭕`;
-                item.onclick = () => {
-                    item.innerText = item.innerText.includes('⭕') ? `配方 ${i.toString().padStart(2, '0')} ❌` : `配方 ${i.toString().padStart(2, '0')} ⭕`;
-                    item.style.color = item.innerText.includes('❌') ? '#ccc' : '#4a3e3d';
-                };
+                const item = document.createElement('div'); item.className = 'note-item'; item.innerText = `配方 ${i.toString().padStart(2, '0')} ⭕`;
+                item.onclick = () => { item.innerText = item.innerText.includes('⭕') ? `配方 ${i.toString().padStart(2, '0')} ❌` : `配方 ${i.toString().padStart(2, '0')} ⭕`; item.style.color = item.innerText.includes('❌') ? '#ccc' : '#4a3e3d'; };
                 notebook.appendChild(item);
             }
         }
-
-        function pushGrid(type, index) {
-            if (!isMyTurn) return alert("現在不是你的回合喔！");
-            socket.emit('pushGrid', { roomId: currentRoomId, type: type, index: index });
-        }
-
-        function submitCombine() {
-            if (!isMyTurn) return alert("現在不是你的回合喔！");
-            let num = document.getElementById('combineInput').value;
-            if(!num) return alert("請輸入想要合成的配方數字！");
-            socket.emit('combineRecipe', { roomId: currentRoomId, recipeNum: num.padStart(2, '0') });
-        }
-
+        function startGame() { socket.emit('startGame', currentRoomId); document.getElementById('restartBtn').style.display = 'none'; }
         socket.on('gameStateUpdate', (room) => {
-            const board = document.getElementById('kitchenBoard');
-            board.innerHTML = '';
-
-            if(room.recipe10Combo) {
-                document.getElementById('menu10Text').innerHTML = `10：主廚驚喜 ➔ ${room.recipe10Combo.join(' + ')} (需加工)`;
-            }
-
+            const board = document.getElementById('kitchenBoard'); board.innerHTML = '';
+            if(room.recipe10Combo) document.getElementById('menu10Text').innerHTML = `10：主廚驚喜 ➔ ${room.recipe10Combo.join(' + ')}`;
             room.boardTiles.forEach((tileType, i) => {
-                const tile = document.createElement('div');
-                tile.className = i === 12 ? 'tile center-tile' : 'tile';
-                
-                if (tileType === '🏪 店鋪櫃台') tile.innerHTML = '🏪<br>櫃台';
-                else if (tileType === '🍓 食材櫃') tile.innerHTML = '🍓<br>食材櫃';
-                else if (tileType === '🔍 辦公室') tile.innerHTML = '🔍<br>辦公室';
-                else if (tileType === '🏛️ 圖書館') tile.innerHTML = '🏛️<br>圖書館';
-                else if (tileType === '🍳 加工區') tile.innerHTML = '🍳<br>加工區';
-                else tile.innerHTML = '🧱<br>流理台';
-
-                room.players.forEach(p => {
-                    if (p.pos === i) {
-                        const tag = document.createElement('span');
-                        tag.className = 'p-avatar';
-                        let isMe = (p.name === myName);
-                        if (isMe) { myCurrentPos = i; }
-                        tag.style.background = isMe ? '#e76f51' : '#2a9d8f';
-                        tag.innerText = isMe ? '🐾 我' : p.name.replace(' (AI)', '');
-                        tile.appendChild(tag);
-                    }
-                });
-                
-                tile.onclick = () => {
-                    if (!isMyTurn) return alert("現在不是你的回合喔！");
-                    socket.emit('movePlayer', { roomId: currentRoomId, targetPos: i });
-                };
+                const tile = document.createElement('div'); tile.className = i === 12 ? 'tile center-tile' : 'tile';
+                tile.innerHTML = tileType === '🏪 店鋪櫃台' ? '🏪<br>櫃台' : tileType === '🍓 食材櫃' ? '🍓<br>食材' : tileType === '🔍 辦公室' ? '🔍<br>辦公室' : tileType === '🏛️ 圖書館' ? '🏛️<br>圖書館' : tileType === '🍳 加工區' ? '🍳<br>加工區' : '🧱<br>流理台';
+                room.players.forEach(p => { if (p.pos === i) { const tag = document.createElement('span'); tag.className = 'p-avatar'; let isMe = (p.name === myName); if (isMe) myCurrentPos = i; tag.style.background = isMe ? '#e76f51' : '#2a9d8f'; tag.innerText = isMe ? '🐾 我' : p.name.replace(' (AI)', ''); tile.appendChild(tag); } });
+                tile.onclick = () => { if (isMyTurn) socket.emit('movePlayer', { roomId: currentRoomId, targetPos: i }); };
                 board.appendChild(tile);
             });
-
-            let currentP = room.players[room.turnIndex];
-            isMyTurn = (currentP.name === myName);
-            document.getElementById('statusBar').innerText = isMyTurn ? "🌟 輪到你的回合！請利用上方「大風吹」推圖，或「點擊鄰格」移動！" : `💤 等待中... 當前輪到：【${currentP.name}】`;
+            let currentP = room.players[room.turnIndex]; isMyTurn = (currentP.name === myName);
+            document.getElementById('statusBar').innerText = isMyTurn ? "🌟 輪到你了！請利用上方「大風吹」推圖，或點擊鄰格移動！" : `💤 當前輪到：【${currentP.name}】`;
             document.getElementById('statusBar').style.background = isMyTurn ? "#e76f51" : "#264653";
-
             let me = room.players.find(p => p.name === myName);
             if (me) {
                 document.getElementById('handPanel').innerText = `🎴 我的手牌提示：【配方 ${me.cards.join(' 號】、【配方 ')} 號】`;
-                document.getElementById('inventoryPanel').innerText = `🎒 食材背包：${me.inventory.length > 0 ? me.inventory.join(', ') : '空空如也'}`;
+                document.getElementById('inventoryPanel').innerText = `🎒 食材背包：${me.inventory.length > 0 ? me.inventory.join(', ') : '空'}`;
                 document.getElementById('productPanel').innerText = `🎁 包裝成品：${me.craftedProduct ? me.craftedProduct : '無'}`;
             }
         });
-
-        function submitBake() {
-            if (myCurrentPos !== 12) return alert("❌ 你必須親自走到正中央的「🏪 店鋪櫃台」才能進行商品上架！");
-            let guess = document.getElementById('guessInput').value;
-            if(!guess) return alert("請輸入要上架的商品配方數字！");
-            socket.emit('tryBake', { roomId: currentRoomId, guessNumber: guess.padStart(2, '0') });
-        }
-
-        socket.on('gameLog', (msg) => {
-            const box = document.getElementById('logBox');
-            box.innerHTML += `<div style="margin-bottom: 3px;">${msg}</div>`;
-            box.scrollTop = box.scrollHeight;
-        });
-
-        socket.on('intelFound', (data) => alert(data.msg));
-        socket.on('moveResult', (data) => alert(data.msg));
-        socket.on('bakeResult', (data) => alert(data.msg));
-        socket.on('gameOver', (data) => { 
-            alert(data.msg); 
-            document.getElementById('restartBtn').style.display = 'block';
-        });
+        socket.on('gameLog', (msg) => { const box = document.getElementById('logBox'); box.innerHTML += `<div>${msg}</div>`; box.scrollTop = box.scrollHeight; });
+        socket.on('intelFound', (data) => alert(data.msg)); socket.on('moveResult', (data) => alert(data.msg));
+        socket.on('bakeResult', (data) => alert(data.msg)); socket.on('gameOver', (data) => { alert(data.msg); document.getElementById('restartBtn').style.display = 'block'; });
     </script>
 </body>
 </html>
