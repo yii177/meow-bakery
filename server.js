@@ -42,7 +42,7 @@ io.on('connection', (socket) => {
         }
 
         // 2. 初始化 10 張配方卡，抽出一張當謎底
-        let recipes =;
+        let recipes = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10'];
         recipes.sort(() => Math.random() - 0.5);
         room.secretAnswer = recipes.pop(); // 謎底藏起來
 
