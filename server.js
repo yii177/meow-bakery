@@ -259,7 +259,7 @@ function nextTurn(room, roomId) {
         setTimeout(() => {
             if(Math.random() > 0.75) {
                 // AI 有機率亂推地圖發動大風吹
-                let types = ['row', 'col'], indices =;
+                let types = ['row', 'col'], indices = [0, 1, 2, 3, 4];
                 let t = types[Math.floor(Math.random()*2)], idx = indices[Math.floor(Math.random()*4)];
                 io.to(roomId).emit('gameLog', `🤖 【${nextPlayer.name}】在思考後，甩尾發動了大風吹！`);
                 
