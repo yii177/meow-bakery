@@ -10,7 +10,7 @@ app.use(express.static('public'));
 
 let rooms = {};
 const FOODS = ['🍓 草莓', '🍫 巧克力', '🥛 牛奶', '🐟 魔法魚干'];
-const SPAWN_POINTS =; // 四個角落位置
+const SPAWN_POINTS =[0, 4, 20, 24];
 
 // 檢查是否相鄰（國王步，含斜角）
 function isAdjacent(pos1, pos2) {
