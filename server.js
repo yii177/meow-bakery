@@ -10,61 +10,82 @@ app.use(express.static('public'));
 
 let rooms = {};
 const FOODS = ['🍓 草莓', '🍫 巧克力', '🥛 牛奶', '🐟 魔法魚干'];
-const SPAWN_POINTS = [0, 4, 20, 24];
+const SPAWN_POINTS =; // 四個角落位置
 
+// 檢查是否相鄰（國王步，含斜角）
 function isAdjacent(pos1, pos2) {
     let r1 = Math.floor(pos1 / 5), c1 = pos1 % 5;
     let r2 = Math.floor(pos2 / 5), c2 = pos2 % 5;
     return Math.abs(r1 - r2) <= 1 && Math.abs(c1 - c2) <= 1;
 }
 
+// 統計陣列中各元素數量的工具函式
+function countItems(arr) {
+    let counts = {};
+    arr.forEach(x => counts[x] = (counts[x] || 0) + 1);
+    return counts;
+}
+
 io.on('connection', (socket) => {
+    // 真人朋友加入房間
     socket.on('joinRoom', ({ roomId, playerName }) => {
         socket.join(roomId);
         if (!rooms[roomId]) {
             rooms[roomId] = {
                 id: roomId, players: [], gameStarted: false, secretAnswer: null, turnIndex: 0,
-                boardTiles: Array(25).fill('🧱 流理台')
+                boardTiles: Array(25).fill('🧱 流理台'),
+                // 每回合隨機搭配的10號隱藏套餐配方 (隨機挑兩樣食材)
+                recipe10Combo: [FOODS[Math.floor(Math.random() * 4)], FOODS[Math.floor(Math.random() * 4)]]
             };
+            // 初始化特色地圖配置
             for(let i=0; i<25; i++) {
-                if(i===12) rooms[roomId].boardTiles[i] = '🍳 中央烤爐';
+                if(i===12) rooms[roomId].boardTiles[i] = '🏪 店鋪櫃台';
                 else if(i%4===0) rooms[roomId].boardTiles[i] = '🍓 食材櫃';
-                else if(i===6 || i===18) rooms[roomId].boardTiles[i] = '🔍 辦公室';
+                else if(i===6) rooms[roomId].boardTiles[i] = '🔍 辦公室';
+                else if(i===18) rooms[roomId].boardTiles[i] = '🏛️ 圖書館';
+                else if(i===8 || i===16) rooms[roomId].boardTiles[i] = '🍳 加工區';
             }
         }
         let existing = rooms[roomId].players.find(p => p.id === socket.id);
         if (!existing) {
             rooms[roomId].players.push({ 
-                id: socket.id, name: playerName, isAI: false, cards: [], pos: 0, inventory: [] 
+                id: socket.id, name: playerName, isAI: false, cards: [], pos: 0, inventory: [], previousPos: -1, craftedProduct: null
             });
         }
         io.to(roomId).emit('gameStateUpdate', rooms[roomId]);
     });
 
+    // 開始新遊戲 (或免洗重開局)
     socket.on('startGame', (roomId) => {
         let room = rooms[roomId];
         if (!room) return;
 
+        // 清除舊 AI，只留真人
         room.players = room.players.filter(p => !p.isAI);
-        const aiNames = ['貓主廚阿橘 (AI)', '偵探黑貓 (AI)', '店長三花 (AI)'];
+        const aiNames = ['阿橘主廚 (AI)', '黑貓偵探 (AI)', '三花店長 (AI)'];
         let aiCount = 1;
         while (room.players.length < 4) {
             room.players.push({ 
-                id: 'AI_' + Math.random(), name: aiNames[aiCount - 1], isAI: true, cards: [], pos: 0, inventory: [] 
+                id: 'AI_' + Math.random(), name: aiNames[aiCount - 1], isAI: true, cards: [], pos: 0, inventory: [], previousPos: -1, craftedProduct: null
             });
             aiCount++;
         }
 
+        // 徹底排空舊資料，初始化坐標與清空背包手牌
         room.players.forEach((p, idx) => {
             p.pos = SPAWN_POINTS[idx];
             p.inventory = [];
             p.cards = [];
+            p.previousPos = -1;
+            p.craftedProduct = null;
         });
 
+        // 重新洗牌抽出謎底
         let recipes = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10'];
         recipes.sort(() => Math.random() - 0.5);
         room.secretAnswer = recipes.pop();
 
+        // 重新平分提示卡
         room.players.forEach(p => {
             p.cards.push(recipes.pop());
             p.cards.push(recipes.pop());
@@ -74,21 +95,48 @@ io.on('connection', (socket) => {
         room.turnIndex = 0;
         
         io.to(roomId).emit('gameStateUpdate', room);
+        io.to(roomId).emit('gameLog', "🏁 貓貓廚房大門開啟！【採集 ➔ 加工 ➔ 上架】大作戰正式爆發！");
+    });
+    // 處理推動板塊（大風吹機制）
+    socket.on('pushGrid', ({ roomId, type, index }) => {
+        let room = rooms[roomId];
+        if (!room || !room.gameStarted) return;
+        let currentPlayer = room.players[room.turnIndex];
+        if (currentPlayer.id !== socket.id) return;
+
+        let tiles = room.boardTiles;
+        if (type === 'row') {
+            let rowStart = index * 5;
+            let temp = tiles[rowStart + 4];
+            for (let i = 4; i > 0; i--) tiles[rowStart + i] = tiles[rowStart + i - 1];
+            tiles[rowStart] = temp;
+        } else {
+            let temp = tiles[20 + index];
+            for (let i = 4; i > 0; i--) tiles[i * 5 + index] = tiles[(i - 1) * 5 + index];
+            tiles[index] = temp;
+        }
+
+        io.to(roomId).emit('gameLog', `💨 【${currentPlayer.name}】甩尾發動了大風吹，強行推動了地圖！`);
+        nextTurn(room, roomId);
     });
 
+    // 處理移動走位（防原地刷物資、踩辦公室/圖書館改全場情報公報）
     socket.on('movePlayer', ({ roomId, targetPos }) => {
         let room = rooms[roomId];
         if (!room) return;
         let currentPlayer = room.players[room.turnIndex];
-        
-        // 核心修復：如果玩家位置未定義，賦予預設值防呆
-        if(currentPlayer.pos === undefined) currentPlayer.pos = 0;
+        if (currentPlayer.id !== socket.id) return;
 
+        if (currentPlayer.pos === targetPos) {
+            socket.emit('moveResult', { success: false, msg: "❌ 禁止原地刷物資！你這回合必須移動到其他格子！" });
+            return;
+        }
         if (!isAdjacent(currentPlayer.pos, targetPos)) {
             socket.emit('moveResult', { success: false, msg: "❌ 一次只能走相鄰的 1 格喔！" });
             return;
         }
 
+        currentPlayer.previousPos = currentPlayer.pos;
         currentPlayer.pos = targetPos;
         let tileType = room.boardTiles[targetPos];
         let logMsg = `🐾 【${currentPlayer.name}】移動到第 ${targetPos+1} 格 (${tileType.replace('<br>','')})`;
@@ -96,67 +144,152 @@ io.on('connection', (socket) => {
         if (tileType === '🍓 食材櫃') {
             let loot = FOODS[Math.floor(Math.random() * FOODS.length)];
             currentPlayer.inventory.push(loot);
-            logMsg += ` 獲得了 ${loot}！`;
-        } else if (tileType === '🔍 辦公室') {
-            let targets = room.players.filter(p => p.name !== currentPlayer.name);
-            let randomTarget = targets[Math.floor(Math.random() * targets.length)];
-            if (randomTarget && randomTarget.cards.length > 0) {
-                let randomCard = randomTarget.cards[Math.floor(Math.random() * randomTarget.cards.length)];
-                io.to(currentPlayer.id).emit('intelFound', { msg: `🔍 祕報：你發現【${randomTarget.name}】手上有 【配方 ${randomCard} 號】，它絕對不是答案！` });
-            }
+            logMsg += ` 並採集到 ${loot}！`;
+        } else if (tileType === '🔍 辦公室' || tileType === '🏛️ 圖書館') {
+            // 全場公開公報一條假答案，加速解謎節奏
+            let pool = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10'].filter(x => x !== room.secretAnswer);
+            let broadcastCard = pool[Math.floor(Math.random() * pool.length)];
+            logMsg += ` 觸發了【全場情報公報】！`;
+            io.to(roomId).emit('gameLog', `📢 【情報公報】：根據 ${currentPlayer.name} 的調查，【配方 ${broadcastCard} 號】絕對不是答案！大家快把它刪除！`);
         }
 
         io.to(roomId).emit('gameLog', logMsg);
-        
-        // 切換回合
-        room.turnIndex = (room.turnIndex + 1) % room.players.length;
-        io.to(roomId).emit('gameStateUpdate', room);
-        
-        // 觸發 AI 回合
-        checkAITurn(room, roomId);
+        nextTurn(room, roomId);
     });
 
+    // 處理加工區合成（01-06, 10 需要加工）
+    socket.on('combineRecipe', ({ roomId, recipeNum }) => {
+        let room = rooms[roomId];
+        if (!room) return;
+        let currentPlayer = room.players[room.turnIndex];
+        if (currentPlayer.id !== socket.id) return;
+
+        if (room.boardTiles[currentPlayer.pos] !== '🍳 加工區') {
+            socket.emit('intelFound', { msg: "❌ 你必須先走到「🍳 加工區」才能進行食材加工！" });
+            return;
+        }
+
+        let inv = currentPlayer.inventory;
+        let counts = countItems(inv);
+        let success = false;
+        let pName = "";
+
+        if (recipeNum === "01" && counts['🍓 草莓'] >= 2 && counts['🥛 牛奶'] >= 1) {
+            inv.splice(inv.indexOf('🍓 草莓'), 1); inv.splice(inv.indexOf('🍓 草莓'), 1); inv.splice(inv.indexOf('🥛 牛奶'), 1);
+            success = true; pName = "🎁 草莓重乳酪成品";
+        } else if (recipeNum === "02" && counts['🍫 巧克力'] >= 2 && counts['🐟 魔法魚干'] >= 1) {
+            inv.splice(inv.indexOf('🍫 巧克力'), 1); inv.splice(inv.indexOf('🍫 巧克力'), 1); inv.splice(inv.indexOf('🐟 魔法魚干'), 1);
+            success = true; pName = "🎁 濃情巧克力成品";
+        } else if (recipeNum === "03" && counts['🐟 魔法魚干'] >= 3) {
+            inv.splice(inv.indexOf('🐟 魔法魚干'), 1); inv.splice(inv.indexOf('🐟 魔法魚干'), 1); inv.splice(inv.indexOf('🐟 魔法魚干'), 1);
+            success = true; pName = "🎁 魔法魚干派成品";
+        } else if (recipeNum === "04" && inv.length >= 4) {
+            let pairs = 0;
+            for(let key in counts) { if(counts[key] >= 2) pairs++; }
+            if(pairs >= 2) { success = true; pName = "🎁 甜甜雙拼成品"; currentPlayer.inventory = []; }
+        } else if (recipeNum === "05" && counts['🍓 草莓'] >= 1 && counts['🍫 巧克力'] >= 1 && counts['🥛 牛奶'] >= 1) {
+            inv.splice(inv.indexOf('🍓 草莓'), 1); inv.splice(inv.indexOf('🍫 巧克力'), 1); inv.splice(inv.indexOf('🥛 牛奶'), 1);
+            success = true; pName = "🎁 水果巧克力成品";
+        } else if (recipeNum === "06" && counts['🍫 巧克力'] >= 2 && counts['🥛 牛奶'] >= 2) {
+            inv.splice(inv.indexOf('🍫 巧克力'), 1); inv.splice(inv.indexOf('🍫 巧克力'), 1); inv.splice(inv.indexOf('🥛 牛奶'), 1); inv.splice(inv.indexOf('🥛 牛奶'), 1);
+            success = true; pName = "🎁 巧克力牛奶糖成品";
+        } else if (recipeNum === "10") {
+            let r1 = room.recipe10Combo, r2 = room.recipe10Combo;
+            if (counts[r1] >= 1 && counts[r2] >= 1) {
+                inv.splice(inv.indexOf(r1), 1); inv.splice(inv.indexOf(r2), 1);
+                success = true; pName = "🎁 主廚隨機隱藏套餐";
+            }
+        }
+
+        if (success) {
+            currentPlayer.craftedProduct = pName;
+            io.to(roomId).emit('gameLog', `🍳 【${currentPlayer.name}】在加工區成功將食材精煉成了 【${pName}】！`);
+            nextTurn(room, roomId);
+        } else {
+            socket.emit('intelFound', { msg: "❌ 背包物資不符合該配方的加工需求喔！請對照右側菜單！" });
+        }
+    });
+
+    // 🏪 店鋪櫃台上架判定
     socket.on('tryBake', ({ roomId, guessNumber }) => {
         let room = rooms[roomId];
         if (!room) return;
         let currentPlayer = room.players[room.turnIndex];
-        if (guessNumber === room.secretAnswer) {
-            io.to(roomId).emit('gameOver', { winner: currentPlayer.name, answer: room.secretAnswer, msg: `🎉 祝賀！【${currentPlayer.name}】成功破解完美配方！正確解答正是 ${room.secretAnswer} 號！` });
+        if (currentPlayer.id !== socket.id) return;
+
+        if (room.boardTiles[currentPlayer.pos] !== '🏪 店鋪櫃台') {
+            socket.emit('bakeResult', { success: false, msg: "❌ 你必須親自走到正中央的「🏪 店鋪櫃台」才能商品上架！" });
+            return;
+        }
+
+        if (guessNumber !== room.secretAnswer) {
+            socket.emit('bakeResult', { success: false, msg: `❌ 搞錯了！店鋪不賣 ${guessNumber} 號商品，上架被退回！` });
+            nextTurn(room, roomId);
+            return;
+        }
+
+        let inv = currentPlayer.inventory;
+        let counts = countItems(inv);
+        let win = false;
+
+        if (["01","02","03","04","05","06","10"].includes(guessNumber)) {
+            if (currentPlayer.craftedProduct) win = true;
+            else { socket.emit('bakeResult', { success: false, msg: "❌ 這道甜點需要先去「🍳 加工區」合成包裝成品才能拿來上架喔！" }); return; }
+        } else if (guessNumber === "07" && !inv.includes('🐟 魔法魚干') && inv.length >= 3) win = true;
+        else if (guessNumber === "08" && inv.length >= 5) win = true;
+        else if (guessNumber === "09" && Object.keys(counts).length >= 4) win = true;
+
+        if (win) {
+            io.to(roomId).emit('gameOver', { winner: currentPlayer.name, msg: `🏆 🎉 狂賀！【${currentPlayer.name}】成功把正確配方 ${room.secretAnswer} 號商品在「🏪 店鋪櫃台」上架販售，贏得了貓貓麵包店的總冠軍！！` });
         } else {
-            socket.emit('bakeResult', { success: false, msg: `❌ 烘焙失敗！配方不是 ${guessNumber} 號！` });
-            room.turnIndex = (room.turnIndex + 1) % room.players.length;
-            io.to(roomId).emit('gameStateUpdate', room);
-            checkAITurn(room, roomId);
+            socket.emit('bakeResult', { success: false, msg: "❌ 雖然你猜中了配方，但你背包裡的食材不符合該配方的直接上架規定喔！" });
         }
     });
 });
 
-function checkAITurn(room, roomId) {
+function nextTurn(room, roomId) {
+    // 每回合隨機更換10號的主廚驚喜套餐組合
+    room.recipe10Combo = [FOODS[Math.floor(Math.random() * 4)], FOODS[Math.floor(Math.random() * 4)]];
+    room.turnIndex = (room.turnIndex + 1) % room.players.length;
     let nextPlayer = room.players[room.turnIndex];
+    io.to(roomId).emit('gameStateUpdate', room);
+
+    // AI 智慧決策
     if (nextPlayer && nextPlayer.isAI && room.gameStarted) {
         setTimeout(() => {
-            let possibleMoves = [];
-            for (let i = 0; i < 25; i++) {
-                if (isAdjacent(nextPlayer.pos, i) && i !== nextPlayer.pos) possibleMoves.push(i);
+            if(Math.random() > 0.75) {
+                // AI 有機率亂推地圖發動大風吹
+                let types = ['row', 'col'], indices =;
+                let t = types[Math.floor(Math.random()*2)], idx = indices[Math.floor(Math.random()*4)];
+                io.to(roomId).emit('gameLog', `🤖 【${nextPlayer.name}】在思考後，甩尾發動了大風吹！`);
+                
+                let tiles = room.boardTiles;
+                if (t === 'row') {
+                    let rowStart = idx * 5; let temp = tiles[rowStart + 4];
+                    for (let i = 4; i > 0; i--) tiles[rowStart + i] = tiles[rowStart + i - 1];
+                    tiles[rowStart] = temp;
+                } else {
+                    let temp = tiles[20 + idx];
+                    for (let i = 4; i > 0; i--) tiles[i * 5 + idx] = tiles[(i - 1) * 5 + idx];
+                    tiles[idx] = temp;
+                }
+                io.to(roomId).emit('gameLog', `💨 地形被推動了大風吹！`);
+                nextTurn(room, roomId);
+                return;
             }
+            let possibleMoves = [nextPlayer.pos+1, nextPlayer.pos-1, nextPlayer.pos+5, nextPlayer.pos-5].filter(p => p>=0 && p<25 && p!==nextPlayer.pos);
             let aiTarget = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
             nextPlayer.pos = aiTarget;
-            
             let tileType = room.boardTiles[aiTarget];
-            let aiLog = `🤖 【${nextPlayer.name}】碎步走到第 ${aiTarget+1} 格`;
+            let aiLog = `🤖 【${nextPlayer.name}】碎步移動到第 ${aiTarget+1} 格 (${tileType.replace('<br>','')})`;
             if (tileType === '🍓 食材櫃') {
-                let loot = FOODS[Math.floor(Math.random() * FOODS.length)];
-                nextPlayer.inventory.push(loot);
-                aiLog += ` 並拿走 ${loot}！`;
+                nextPlayer.inventory.push(FOODS[Math.floor(Math.random() * FOODS.length)]);
             }
             io.to(roomId).emit('gameLog', aiLog);
-            
-            room.turnIndex = (room.turnIndex + 1) % room.players.length;
-            io.to(roomId).emit('gameStateUpdate', room);
-            checkAITurn(room, roomId);
+            nextTurn(room, roomId);
         }, 1000);
     }
 }
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`伺服器啟動`));
+server.listen(PORT, () => console.log(`生產上架伺服器運行中`));
